@@ -67,20 +67,6 @@
             android:textColor="@color/turquoise"
             style="@style/label"/>
 
-        <Spinner
-            android:id="@+id/spn_hom"
-            android:layout_width="fill_parent"
-            android:layout_height="0dp"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
-            android:layout_weight="55"
-            android:gravity="top"/>
-
-        <TextView
-            android:layout_weight="15"
-            android:text="Calculated result in home currency:"
-            android:textColor="@color/grey_med"
-            android:textSize="12sp"
             style="@style/label"/>
     </LinearLayout>
     <LinearLayout
