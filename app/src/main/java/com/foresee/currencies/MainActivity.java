@@ -31,6 +31,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Spinner mForSpinner, mHomSpinner;
     private String[] mCurrencies;
 
+    public static final String FOR = "FOR_CURRENCY";
+    public static final String HOM = "HOM_CURRENCY";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mForSpinner = (Spinner) findViewById(R.id.spn_for);
         mHomSpinner = (Spinner) findViewById(R.id.spn_hom);
         //controller: mediates model and view
-        ArrayAdapter<String> arrayAdapter=new ArrayAdapter<>(this,
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this,
                 R.layout.spinner_closed, //view: layout you see when the spinner is closed
                 mCurrencies //model: the array of Strings (Currencies list)
         );
@@ -58,30 +61,47 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         mHomSpinner.setOnItemSelectedListener(this);
         mForSpinner.setOnItemSelectedListener(this);
+        // The savedInstanceState will be not null if MainActivity restore from interrupt or config
+        if (savedInstanceState == null && PrefsMgr.getString(this, FOR) == null
+                && PrefsMgr.getString(this, HOM) == null) {
+            mForSpinner.setSelection(findPositionGivenCode("CNY", mCurrencies));
+            mHomSpinner.setSelection(findPositionGivenCode("USD", mCurrencies));
+            PrefsMgr.setString(this, FOR, "CNY");
+            PrefsMgr.setString(this, HOM, "USD");
+        }else{
+            mForSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this,FOR), mCurrencies));
+            mHomSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this,HOM), mCurrencies));
+        }
     }
-    public boolean isOnline(){
-        ConnectivityManager cm=(ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo=cm.getActiveNetworkInfo();
-        if(networkInfo!=null && networkInfo.isConnectedOrConnecting()){
+
+    public boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnectedOrConnecting()) {
             return true;
         }
         return false;
     }
-    private void launchBrowser(String strUri){
-        if(isOnline()){
-            Uri uri= Uri.parse(strUri);
+
+    private void launchBrowser(String strUri) {
+        if (isOnline()) {
+            Uri uri = Uri.parse(strUri);
             // call an implicit intent
-            Intent intent=new Intent(Intent.ACTION_VIEW, uri);
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intent);
         }
     }
-    private void invertCurrencies(){
-        int nFor=mForSpinner.getSelectedItemPosition();
-        int nHom=mHomSpinner.getSelectedItemPosition();
+
+    private void invertCurrencies() {
+        int nFor = mForSpinner.getSelectedItemPosition();
+        int nHom = mHomSpinner.getSelectedItemPosition();
         mForSpinner.setSelection(nHom);
         mHomSpinner.setSelection(nFor);
         mConvertedTextView.setText("");
+        PrefsMgr.setString(this, FOR, extractCodeFromCurrency((String)mForSpinner.getSelectedItem()));
+        PrefsMgr.setString(this, HOM, extractCodeFromCurrency((String)mHomSpinner.getSelectedItem()));
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -95,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        switch (id){
+        switch (id) {
             case R.id.mnu_invert:
                 invertCurrencies();
                 break;
@@ -111,25 +131,29 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        switch (parent.getId()){
+        switch (parent.getId()) {
             case R.id.spn_for:
-                //define behavior
+                PrefsMgr.setString(this,FOR,
+                        extractCodeFromCurrency((String) mForSpinner.getSelectedItem()));
                 break;
             case R.id.spn_hom:
-                //define behavior
+                PrefsMgr.setString(this,HOM,
+                        extractCodeFromCurrency((String) mHomSpinner.getSelectedItem()));
                 break;
             default:
                 break;
         }
+        mConvertedTextView.setText("");
     }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
     }
-    private int findPositionGivenCode(String code, String[] currencies){
-        for (int i=0; i<currencies.length; i++){
-            if(extractCodeFromCurrency(currencies[i]).equalsIgnoreCase(code)){
+
+    private int findPositionGivenCode(String code, String[] currencies) {
+        for (int i = 0; i < currencies.length; i++) {
+            if (extractCodeFromCurrency(currencies[i]).equalsIgnoreCase(code)) {
                 return i;
             }
         }
@@ -137,6 +161,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     private String extractCodeFromCurrency(String currency) {
-        return currency.substring(0,3);
+        return currency.substring(0, 3);
     }
 }
