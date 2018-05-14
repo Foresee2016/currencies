@@ -72,6 +72,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mForSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this,FOR), mCurrencies));
             mHomSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this,HOM), mCurrencies));
         }
+        mCalcButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
     }
 
     public boolean isOnline() {
