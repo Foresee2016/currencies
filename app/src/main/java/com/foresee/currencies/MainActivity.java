@@ -45,12 +45,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String HOM = "HOM_CURRENCY";
 
     private String mKey; // developer key for WebAPI
-    public static final String RATES="result";
-    public static final String URL_BASE="http://api.k780.com/?app=finance.rate&appkey=33573&scur=%s&tcur=%s&sign=%s";
-    private static final DecimalFormat DECIMAL_FORMAT=new DecimalFormat("#,##0.00000");
+    public static final String RATES = "result";
+    public static final String URL_BASE = "http://api.k780.com/?app=finance.rate&appkey=33573&scur=%s&tcur=%s&sign=%s";
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,##0.00000");
 
     private CurrencyTaskCallback mCurrencyTaskCallback;
-    public static interface CurrencyTaskCallback{
+
+    public static interface CurrencyTaskCallback {
         void executionDone();
     }
 
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        ActionBar actionBar=getSupportActionBar();
+        ActionBar actionBar = getSupportActionBar();
         actionBar.setHomeButtonEnabled(true);
         actionBar.setDisplayShowHomeEnabled(true);
         actionBar.setIcon(R.mipmap.ic_launcher);
@@ -96,21 +97,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mHomSpinner.setSelection(findPositionGivenCode("USD", mCurrencies));
             PrefsMgr.setString(this, FOR, "CNY");
             PrefsMgr.setString(this, HOM, "USD");
-        }else{
-            mForSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this,FOR), mCurrencies));
-            mHomSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this,HOM), mCurrencies));
+        } else {
+            mForSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this, FOR), mCurrencies));
+            mHomSpinner.setSelection(findPositionGivenCode(PrefsMgr.getString(this, HOM), mCurrencies));
         }
         mCalcButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String url=String.format(URL_BASE,
-                        extractCodeFromCurrency(mCurrencies[mHomSpinner.getSelectedItemPosition()]),
-                        extractCodeFromCurrency(mCurrencies[mForSpinner.getSelectedItemPosition()]),
-                        mKey);
-                new CurrencyConverterTask().execute(url);
+                if (isNumeric(String.valueOf(mAmountEditText.getText()))) {
+                    String url = String.format(URL_BASE,
+                            extractCodeFromCurrency(mCurrencies[mHomSpinner.getSelectedItemPosition()]),
+                            extractCodeFromCurrency(mCurrencies[mForSpinner.getSelectedItemPosition()]),
+                            mKey);
+                    new CurrencyConverterTask().execute(url);
+                } else {
+                    Toast.makeText(MainActivity.this, "Not a numeric value, please check.",
+                            Toast.LENGTH_LONG).show();
+                }
+
             }
         });
-        mKey=getKey("sign");
+        mKey = getKey("sign");
     }
 
     public boolean isOnline() {
@@ -131,14 +138,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
+    public static boolean isNumeric(String str) {
+        try {
+            double dub = Double.parseDouble(str);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
     private void invertCurrencies() {
         int nFor = mForSpinner.getSelectedItemPosition();
         int nHom = mHomSpinner.getSelectedItemPosition();
         mForSpinner.setSelection(nHom);
         mHomSpinner.setSelection(nFor);
         mConvertedTextView.setText("");
-        PrefsMgr.setString(this, FOR, extractCodeFromCurrency((String)mForSpinner.getSelectedItem()));
-        PrefsMgr.setString(this, HOM, extractCodeFromCurrency((String)mHomSpinner.getSelectedItem()));
+        PrefsMgr.setString(this, FOR, extractCodeFromCurrency((String) mForSpinner.getSelectedItem()));
+        PrefsMgr.setString(this, HOM, extractCodeFromCurrency((String) mHomSpinner.getSelectedItem()));
     }
 
     @Override
@@ -172,11 +188,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         switch (parent.getId()) {
             case R.id.spn_for:
-                PrefsMgr.setString(this,FOR,
+                PrefsMgr.setString(this, FOR,
                         extractCodeFromCurrency((String) mForSpinner.getSelectedItem()));
                 break;
             case R.id.spn_hom:
-                PrefsMgr.setString(this,HOM,
+                PrefsMgr.setString(this, HOM,
                         extractCodeFromCurrency((String) mHomSpinner.getSelectedItem()));
                 break;
             default:
@@ -202,22 +218,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String extractCodeFromCurrency(String currency) {
         return currency.substring(0, 3);
     }
-    private String getKey(String keyName){
-        AssetManager assetManager=this.getResources().getAssets();
-        Properties properties=new Properties();
-        try{
-            InputStream inputStream=assetManager.open("keys.properties");
+
+    private String getKey(String keyName) {
+        AssetManager assetManager = this.getResources().getAssets();
+        Properties properties = new Properties();
+        try {
+            InputStream inputStream = assetManager.open("keys.properties");
             properties.load(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return properties.getProperty(keyName);
     }
-    private  class CurrencyConverterTask extends AsyncTask<String, Void, JSONObject>{
+
+    private class CurrencyConverterTask extends AsyncTask<String, Void, JSONObject> {
         private ProgressDialog progressDialog;
+
         @Override
         protected void onPreExecute() {
-            progressDialog=new ProgressDialog(MainActivity.this);
+            progressDialog = new ProgressDialog(MainActivity.this);
             progressDialog.setTitle("Calculating Result...");
             progressDialog.setMessage("One Moment please...");
             progressDialog.setCancelable(true);
@@ -239,27 +258,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         @Override
         protected void onPostExecute(JSONObject jsonObject) {
-            double dCalculated=0.0;
-            String strForCode=extractCodeFromCurrency(mCurrencies[mForSpinner.getSelectedItemPosition()]);
-            String strHomCode=extractCodeFromCurrency(mCurrencies[mHomSpinner.getSelectedItemPosition()]);
-            String strAmount=mAmountEditText.getText().toString();
+            double dCalculated = 0.0;
+            String strForCode = extractCodeFromCurrency(mCurrencies[mForSpinner.getSelectedItemPosition()]);
+            String strHomCode = extractCodeFromCurrency(mCurrencies[mHomSpinner.getSelectedItemPosition()]);
+            String strAmount = mAmountEditText.getText().toString();
             try {
-                if(jsonObject==null){
+                if (jsonObject == null) {
                     throw new JSONException("No data available");
                 }
-                JSONObject jsonRates=jsonObject.getJSONObject(RATES);
-                Double rates=jsonRates.getDouble("rate");
+                JSONObject jsonRates = jsonObject.getJSONObject(RATES);
+                Double rates = jsonRates.getDouble("rate");
                 dCalculated = Double.parseDouble(strAmount) * rates;
-                mConvertedTextView.setText(DECIMAL_FORMAT.format(dCalculated)+" "+strHomCode);
+                mConvertedTextView.setText(DECIMAL_FORMAT.format(dCalculated) + " " + strHomCode);
             } catch (JSONException e) {
-                Toast.makeText(MainActivity.this, "There is a JSON exception: "+e.getMessage(),
+                Toast.makeText(MainActivity.this, "There is a JSON exception: " + e.getMessage(),
                         Toast.LENGTH_LONG).show();
                 mConvertedTextView.setText("");
                 e.printStackTrace();
             }
             progressDialog.dismiss();
             //for testing
-            if(mCurrencyTaskCallback!=null){
+            if (mCurrencyTaskCallback != null) {
                 mCurrencyTaskCallback.executionDone();
             }
         }
