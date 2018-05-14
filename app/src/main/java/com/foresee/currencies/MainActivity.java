@@ -127,4 +127,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onNothingSelected(AdapterView<?> parent) {
 
     }
+    private int findPositionGivenCode(String code, String[] currencies){
+        for (int i=0; i<currencies.length; i++){
+            if(currencies[i].substring(0,3).equalsIgnoreCase(code)){
+                return i;
+            }
+        }
+        return 0;
+    }
 }
