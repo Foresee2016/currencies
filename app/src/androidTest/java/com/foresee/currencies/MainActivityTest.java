@@ -50,7 +50,7 @@ public class MainActivityTest extends ActivityInstrumentationTestCase2<MainActiv
     }
 
     public void testFloat() throws Throwable {
-        proxyCurrencyConverterTask("12..3");
+        proxyCurrencyConverterTask("12.3"); //12..3 can be input even the EditText is Number Only
     }
 
     public void proxyCurrencyConverterTask(final String str) throws Throwable{
