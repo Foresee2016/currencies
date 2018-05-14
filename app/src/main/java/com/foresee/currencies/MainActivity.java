@@ -49,6 +49,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String URL_BASE="http://api.k780.com/?app=finance.rate&appkey=33573&scur=%s&tcur=%s&sign=%s";
     private static final DecimalFormat DECIMAL_FORMAT=new DecimalFormat("#,##0.00000");
 
+    private CurrencyTaskCallback mCurrencyTaskCallback;
+    public static interface CurrencyTaskCallback{
+        void executionDone();
+    }
+
+    public void setCurrencyTaskCallback(CurrencyTaskCallback currencyTaskCallback) {
+        mCurrencyTaskCallback = currencyTaskCallback;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -249,6 +258,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 e.printStackTrace();
             }
             progressDialog.dismiss();
+            //for testing
+            if(mCurrencyTaskCallback!=null){
+                mCurrencyTaskCallback.executionDone();
+            }
         }
     }
 }
