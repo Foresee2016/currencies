@@ -1,25 +1,29 @@
 package com.foresee.currencies;
 
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,8 +44,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String HOM = "HOM_CURRENCY";
 
     private String mKey; // developer key for WebAPI
-    public static final String RATES="rates";
-    public static final String URL_BASE="http://api.k780.com/?app=finance.rate&appkey=33573&scur=USD&tcur=CNY&sign=87ae604352ebc78478030d206c4b363d";
+    public static final String RATES="result";
+    public static final String URL_BASE="http://api.k780.com/?app=finance.rate&appkey=33573&scur=%s&tcur=%s&sign=%s";
     private static final DecimalFormat DECIMAL_FORMAT=new DecimalFormat("#,##0.00000");
 
     @Override
@@ -85,7 +89,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mCalcButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                String url=String.format(URL_BASE,
+                        extractCodeFromCurrency(mCurrencies[mHomSpinner.getSelectedItemPosition()]),
+                        extractCodeFromCurrency(mCurrencies[mForSpinner.getSelectedItemPosition()]),
+                        mKey);
+                new CurrencyConverterTask().execute(url);
             }
         });
         mKey=getKey("sign");
@@ -190,5 +198,52 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             e.printStackTrace();
         }
         return properties.getProperty(keyName);
+    }
+    private  class CurrencyConverterTask extends AsyncTask<String, Void, JSONObject>{
+        private ProgressDialog progressDialog;
+        @Override
+        protected void onPreExecute() {
+            progressDialog=new ProgressDialog(MainActivity.this);
+            progressDialog.setTitle("Calculating Result...");
+            progressDialog.setMessage("One Moment please...");
+            progressDialog.setCancelable(true);
+            progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            CurrencyConverterTask.this.cancel(true);
+                            progressDialog.dismiss();
+                        }
+                    });
+            progressDialog.show();
+        }
+
+        @Override
+        protected JSONObject doInBackground(String... strings) {
+            return new JSONParser().getJSONFromUrl(strings[0]);
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject jsonObject) {
+            double dCalculated=0.0;
+            String strForCode=extractCodeFromCurrency(mCurrencies[mForSpinner.getSelectedItemPosition()]);
+            String strHomCode=extractCodeFromCurrency(mCurrencies[mHomSpinner.getSelectedItemPosition()]);
+            String strAmount=mAmountEditText.getText().toString();
+            try {
+                if(jsonObject==null){
+                    throw new JSONException("No data available");
+                }
+                JSONObject jsonRates=jsonObject.getJSONObject(RATES);
+                Double rates=jsonRates.getDouble("rate");
+                dCalculated = Double.parseDouble(strAmount) * rates;
+                mConvertedTextView.setText(DECIMAL_FORMAT.format(dCalculated)+" "+strHomCode);
+            } catch (JSONException e) {
+                Toast.makeText(MainActivity.this, "There is a JSON exception: "+e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+                mConvertedTextView.setText("");
+                e.printStackTrace();
+            }
+            progressDialog.dismiss();
+        }
     }
 }
