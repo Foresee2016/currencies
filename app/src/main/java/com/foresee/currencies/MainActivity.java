@@ -2,6 +2,7 @@ package com.foresee.currencies;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -20,8 +21,12 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Properties;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
     // define members that correspond to Views in layout
@@ -33,6 +38,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public static final String FOR = "FOR_CURRENCY";
     public static final String HOM = "HOM_CURRENCY";
+
+    private String mKey; // developer key for WebAPI
+    public static final String RATES="rates";
+    public static final String URL_BASE="http://api.k780.com/?app=finance.rate&appkey=33573&scur=USD&tcur=CNY&sign=87ae604352ebc78478030d206c4b363d";
+    private static final DecimalFormat DECIMAL_FORMAT=new DecimalFormat("#,##0.00000");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             }
         });
+        mKey=getKey("sign");
     }
 
     public boolean isOnline() {
@@ -168,5 +179,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private String extractCodeFromCurrency(String currency) {
         return currency.substring(0, 3);
+    }
+    private String getKey(String keyName){
+        AssetManager assetManager=this.getResources().getAssets();
+        Properties properties=new Properties();
+        try{
+            InputStream inputStream=assetManager.open("keys.properties");
+            properties.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties.getProperty(keyName);
     }
 }
